@@ -12,8 +12,9 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.concurrent.Callable;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * 执行备份的任务，由{@link DetectingTask}生成，负责执行指定的一个文件或目录的备份。
@@ -21,7 +22,7 @@ import java.util.logging.Logger;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class BackupTask implements Callable<Void> {
-	private static final Logger logger = Logger.getLogger(BackupTask.class.getSimpleName());
+	private static final Logger logger = LogManager.getLogger(BackupTask.class);
 
 	private final BackupConf conf;
 	private final Path relativePath;
@@ -65,7 +66,7 @@ public class BackupTask implements Callable<Void> {
 			return false;
 		} catch (Exception e) {
 			// 为了保证任务不中止，只打印而不抛出异常
-			logger.log(Level.WARNING, "Error checking backup task: " + this, e);
+			logger.error(() -> "Error checking backup task: " + this, e);
 			return false;
 		}
 	}
@@ -82,8 +83,8 @@ public class BackupTask implements Callable<Void> {
 			// 为了节约性能，只要文件大小和修改时间都一样，就认为一样，不再比较内容hash
 			return true;
 
-		String hash1 = fileMd5(file1);
-		String hash2 = fileMd5(file2);
+		String hash1 = fileHash(file1);
+		String hash2 = fileHash(file2);
 		if (!hash1.equals(hash2))
 			return false;
 

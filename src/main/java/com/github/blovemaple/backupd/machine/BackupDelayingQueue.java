@@ -12,16 +12,23 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.github.blovemaple.backupd.plan.BackupTask;
 
 /**
- * 检测任务提交的文件等待执行备份的队列。每个计划有一个。 TODO 总共用一个
+ * 备份任务等待执行备份的队列。源文件最后修改时间后延迟指定时间后才可执行备份，延迟时间由常量{@link #DELAY_SECONDS}指定。
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class BackupDelayingQueue implements Closeable {
-	// 延迟秒数
-	private static final int DELAY_SECONDS = 3;
+	private static final Logger logger = LogManager.getLogger(BackupDelayingQueue.class);
+
+	/**
+	 * 最后修改时间后延迟执行备份的秒数。
+	 */
+	public static int DELAY_SECONDS = 3;
 
 	// 需要延迟等待的任务
 	private Map<BackupTask, Long> readyTimes = new HashMap<>();
@@ -32,7 +39,6 @@ public class BackupDelayingQueue implements Closeable {
 
 	private final Thread delayingController;
 
-	private volatile boolean entranceClosed = false;
 	private volatile boolean closed = false;
 
 	public BackupDelayingQueue() {
@@ -86,6 +92,7 @@ public class BackupDelayingQueue implements Closeable {
 									+ nextReadyTask + ", readyTask=" + readyTask);
 						readyTimes.remove(readyTask);
 						readyTasks.add(readyTask);
+						logger.debug(() -> "Move into delayingTasks: " + readyTask);
 					}
 
 				}
@@ -102,14 +109,13 @@ public class BackupDelayingQueue implements Closeable {
 	 * 
 	 * @param task
 	 * @throws InterruptedException
-	 * @throws ClosedQueueException
 	 * @throws IOException
 	 */
-	public void submit(BackupTask task) throws InterruptedException, ClosedQueueException, IOException {
+	public void submit(BackupTask task) throws InterruptedException, IOException {
 		if (Thread.interrupted())
 			throw new InterruptedException();
-		if (entranceClosed || closed)
-			throw new ClosedQueueException();
+		if (closed)
+			throw new IllegalStateException("Already closed.");
 
 		synchronized (delayingTasks) {
 			// 先从队列中删除该任务（如果已经有的话）
@@ -123,18 +129,20 @@ public class BackupDelayingQueue implements Closeable {
 			if (readyTime <= System.currentTimeMillis()) {
 				// ready
 				readyTasks.put(task);
+				logger.debug(() -> "Submit into readyTasks: " + task);
 			} else {
 				// not ready
 				readyTimes.put(task, readyTime);
 				delayingTasks.add(task);
 				delayingTasks.notify(); // 唤醒DelayingControllerTask
+				logger.debug(() -> "Submit into delayingTasks: " + task);
 			}
 		}
 	}
 
 	private long getReadyTime(BackupTask task) throws IOException {
 		FileTime modifiedTime = Files.getLastModifiedTime(task.fromFullPath());
-		return modifiedTime.toMillis() + DELAY_SECONDS;
+		return modifiedTime.toMillis() + DELAY_SECONDS * 1000;
 	}
 
 	/**
@@ -148,21 +156,13 @@ public class BackupDelayingQueue implements Closeable {
 		if (Thread.interrupted())
 			throw new InterruptedException();
 		if (closed)
-			throw new ClosedQueueException();
+			throw new IllegalStateException("Already closed.");
 
 		return readyTasks.poll(waitingSeconds, TimeUnit.SECONDS);
 	}
 
-	/**
-	 * 停止提交。调用后再提交会抛出异常{@link ClosedQueueException}。
-	 */
-	public void closeEntrance() {
-		entranceClosed = true;
-	}
-
 	@Override
 	public void close() {
-		closeEntrance();
 		closed = true;
 		delayingController.interrupt();
 	}

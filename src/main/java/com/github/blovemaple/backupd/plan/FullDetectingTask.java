@@ -6,12 +6,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
-import com.github.blovemaple.backupd.machine.ClosedQueueException;
 
 /**
  * 执行一次完整检测的任务。
@@ -19,7 +19,7 @@ import com.github.blovemaple.backupd.machine.ClosedQueueException;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class FullDetectingTask extends DetectingTask {
-	private static final Logger logger = Logger.getLogger(FullDetectingTask.class.getSimpleName());
+	private static final Logger logger = LogManager.getLogger(FullDetectingTask.class);
 
 	public FullDetectingTask(BackupConf conf, BackupDelayingQueue queue) {
 		super(conf, queue);
@@ -51,10 +51,10 @@ public class FullDetectingTask extends DetectingTask {
 					.forEachOrdered(rethrowConsumer(this::submitBackupTask));
 		} catch (IOException e) {
 			throw new IOException("Error walking from-path: " + fromPath, e);
-		} catch (ClosedQueueException | InterruptedException e) {
-			// 队列被关闭或线程被中断，直接结束
+		} catch (InterruptedException e) {
+			// 线程被中断，直接结束
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Unknown error in full detecting task of conf " + conf(), e);
+			logger.error(() -> "Unknown error in full detecting task of conf " + conf(), e);
 		}
 
 		return null;

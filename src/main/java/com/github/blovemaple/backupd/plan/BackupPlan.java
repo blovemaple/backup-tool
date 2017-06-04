@@ -5,8 +5,9 @@ import java.nio.file.Files;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
 import com.github.blovemaple.backupd.plan.BackupConf.BackupConfType;
@@ -17,7 +18,7 @@ import com.github.blovemaple.backupd.plan.BackupConf.BackupConfType;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class BackupPlan implements Runnable {
-	private static final Logger logger = Logger.getLogger(BackupPlan.class.getSimpleName());
+	private static final Logger logger = LogManager.getLogger(BackupPlan.class);
 
 	private final BackupConf conf;
 	private final BackupDelayingQueue queue;
@@ -64,7 +65,7 @@ public class BackupPlan implements Runnable {
 		} catch (InterruptedException e) {
 		} catch (Exception e) {
 			// plan执行被interrupt，或某任务发生异常，则强行中止所有任务
-			logger.log(Level.SEVERE, "Unknown error in plan " + this, e);
+			logger.error(() -> "Unknown error in plan " + this, e);
 		} finally {
 			executor.shutdownNow();
 		}

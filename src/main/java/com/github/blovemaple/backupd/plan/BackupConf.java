@@ -20,6 +20,19 @@ public class BackupConf {
 		DAEMON, ONCE
 	}
 
+	public BackupConf(Path fromPath, Path toPath, BackupConfType type) {
+		this.fromPath = fromPath;
+		this.toPath = toPath;
+		this.type = type;
+	}
+
+	public BackupConf(Path fromPath, Path toPath, String filter, BackupConfType type) {
+		this.fromPath = fromPath;
+		this.toPath = toPath;
+		this.filter = filter;
+		this.type = type;
+	}
+
 	public Path getFromPath() {
 		return fromPath;
 	}

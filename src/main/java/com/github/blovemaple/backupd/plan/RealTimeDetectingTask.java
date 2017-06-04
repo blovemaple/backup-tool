@@ -12,8 +12,9 @@ import java.nio.file.WatchService;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
 
@@ -23,7 +24,7 @@ import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class RealTimeDetectingTask extends DetectingTask {
-	private static final Logger logger = Logger.getLogger(RealTimeDetectingTask.class.getSimpleName());
+	private static final Logger logger = LogManager.getLogger(RealTimeDetectingTask.class);
 
 	public RealTimeDetectingTask(BackupConf conf, BackupDelayingQueue queue) {
 		super(conf, queue);
@@ -67,7 +68,7 @@ public class RealTimeDetectingTask extends DetectingTask {
 						}));
 					} catch (Exception e) {
 						// 为了保证任务不中止，只打印而不抛出异常
-						logger.log(Level.WARNING, "Error handling event of path: " + pathsByKey.get(eventKey), e);
+						logger.error(() -> "Error handling event of path: " + pathsByKey.get(eventKey), e);
 					}
 					boolean isStillValid = eventKey.reset();
 					if (!isStillValid)

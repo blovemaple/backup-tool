@@ -13,15 +13,17 @@ import com.google.common.hash.Hashing;
  */
 public class FileHashing {
 	/**
-	 * 计算文件内容的MD5值。
+	 * 计算文件内容的哈希值（murmur3_128）。
 	 * 
 	 * @param filePath
 	 *            文件路径
-	 * @return MD5字符串
+	 * @return 哈希值16进制字符串
 	 * @throws IOException
 	 */
-	public static String fileMd5(Path filePath) throws IOException {
-		Hasher hasher = Hashing.md5().newHasher();
+	public static String fileHash(Path filePath) throws IOException {
+		// guava的Hashing不建议用md5（慢），快速hash建议用goodFastHash，
+		// 但goodFastHash每次加载使用随机种子，导致结果不固定。固定结果的hash建议用murmur3_128。
+		Hasher hasher = Hashing.murmur3_128().newHasher();
 		try (InputStream in = Files.newInputStream(filePath)) {
 			byte[] bytes = new byte[8192];
 			int len;

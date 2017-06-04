@@ -1,8 +1,9 @@
 package com.github.blovemaple.backupd.machine;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.github.blovemaple.backupd.plan.BackupTask;
 
@@ -12,7 +13,7 @@ import com.github.blovemaple.backupd.plan.BackupTask;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class BackupController implements Runnable {
-	private static final Logger logger = Logger.getLogger(BackupController.class.getSimpleName());
+	private static final Logger logger = LogManager.getLogger(BackupController.class);
 
 	private final BackupDelayingQueue queue;
 
@@ -39,7 +40,7 @@ public class BackupController implements Runnable {
 						task.call();
 					} catch (IOException e) {
 						// 为了保证任务不中止，只打印而不抛出异常
-						logger.log(Level.WARNING, "Error running backup task: " + task, e);
+						logger.error(() -> "Error running backup task: " + task, e);
 					}
 
 				} else {
