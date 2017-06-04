@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd;
+package com.github.blovemaple.backupd.machine;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import com.github.blovemaple.backupd.task.BackupTask;
+import com.github.blovemaple.backupd.plan.BackupTask;
 
 /**
  * 检测任务提交的文件等待执行备份的队列。每个计划有一个。 TODO 总共用一个

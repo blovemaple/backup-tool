@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd;
+package com.github.blovemaple.backupd.plan;
 
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;

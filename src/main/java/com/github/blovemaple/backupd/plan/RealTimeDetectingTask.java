@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd.task;
+package com.github.blovemaple.backupd.plan;
 
 import static com.github.blovemaple.backupd.utils.LambdaUtils.*;
 import static java.nio.file.StandardWatchEventKinds.*;
@@ -15,8 +15,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.blovemaple.backupd.BackupConf;
-import com.github.blovemaple.backupd.BackupDelayingQueue;
+import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
 
 /**
  * 持续进行实时检测的任务。

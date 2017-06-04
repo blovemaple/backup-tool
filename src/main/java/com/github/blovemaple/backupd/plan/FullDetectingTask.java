@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd.task;
+package com.github.blovemaple.backupd.plan;
 
 import static com.github.blovemaple.backupd.utils.LambdaUtils.*;
 
@@ -10,9 +10,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import com.github.blovemaple.backupd.BackupConf;
-import com.github.blovemaple.backupd.BackupDelayingQueue;
-import com.github.blovemaple.backupd.ClosedQueueException;
+import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
+import com.github.blovemaple.backupd.machine.ClosedQueueException;
 
 /**
  * 执行一次完整检测的任务。

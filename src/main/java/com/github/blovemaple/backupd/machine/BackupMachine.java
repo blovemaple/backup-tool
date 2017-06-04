@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd;
+package com.github.blovemaple.backupd.machine;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -7,14 +7,15 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.github.blovemaple.backupd.task.BackupControllerTask;
+import com.github.blovemaple.backupd.plan.BackupConf;
+import com.github.blovemaple.backupd.plan.BackupPlan;
 
 /**
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class BackupMachine implements Closeable {
 	private final BackupDelayingQueue queue;
-	private final BackupControllerTask backupController;
+	private final BackupController backupController;
 	private final Map<BackupConf, BackupPlan> backupPlans = new HashMap<>();
 
 	private final ExecutorService executor;
@@ -23,7 +24,7 @@ public class BackupMachine implements Closeable {
 
 	public BackupMachine() {
 		queue = new BackupDelayingQueue();
-		backupController = new BackupControllerTask(queue);
+		backupController = new BackupController(queue);
 
 		executor = Executors.newCachedThreadPool();
 		executor.submit(backupController);

@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd;
+package com.github.blovemaple.backupd.plan;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,9 +8,8 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.blovemaple.backupd.BackupConf.BackupConfType;
-import com.github.blovemaple.backupd.task.FullDetectingTask;
-import com.github.blovemaple.backupd.task.RealTimeDetectingTask;
+import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
+import com.github.blovemaple.backupd.plan.BackupConf.BackupConfType;
 
 /**
  * 备份计划，即执行一个{@link BackupConf}的任务。

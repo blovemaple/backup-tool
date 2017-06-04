@@ -1,24 +1,24 @@
-package com.github.blovemaple.backupd.task;
+package com.github.blovemaple.backupd.machine;
 
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.blovemaple.backupd.BackupDelayingQueue;
+import com.github.blovemaple.backupd.plan.BackupTask;
 
 /**
  * 执行备份的控制任务，负责从{@link BackupDelayingQueue}中提取{@link BackupTask}并执行。
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class BackupControllerTask implements Runnable {
-	private static final Logger logger = Logger.getLogger(BackupControllerTask.class.getSimpleName());
+public class BackupController implements Runnable {
+	private static final Logger logger = Logger.getLogger(BackupController.class.getSimpleName());
 
 	private final BackupDelayingQueue queue;
 
 	private boolean closed = false;
 
-	public BackupControllerTask(BackupDelayingQueue queue) {
+	public BackupController(BackupDelayingQueue queue) {
 		this.queue = queue;
 	}
 

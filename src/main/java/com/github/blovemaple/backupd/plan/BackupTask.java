@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd.task;
+package com.github.blovemaple.backupd.plan;
 
 import static com.github.blovemaple.backupd.utils.FileHashing.*;
 
@@ -14,8 +14,6 @@ import java.nio.file.attribute.FileTime;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.github.blovemaple.backupd.BackupConf;
 
 /**
  * 执行备份的任务，由{@link DetectingTask}生成，负责执行指定的一个文件或目录的备份。

@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd;
+package com.github.blovemaple.backupd.machine;
 
 /**
  * 当{@link BackupDelayingQueue}已经关闭提交，再次调用提交时抛出此异常。
