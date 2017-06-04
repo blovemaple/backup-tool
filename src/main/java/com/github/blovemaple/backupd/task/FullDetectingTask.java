@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -19,7 +20,6 @@ import com.github.blovemaple.backupd.ClosedQueueException;
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class FullDetectingTask extends DetectingTask {
-	@SuppressWarnings("unused")
 	private static final Logger logger = Logger.getLogger(FullDetectingTask.class.getSimpleName());
 
 	public FullDetectingTask(BackupConf conf, BackupDelayingQueue queue) {
@@ -54,6 +54,8 @@ public class FullDetectingTask extends DetectingTask {
 			throw new IOException("Error walking from-path: " + fromPath, e);
 		} catch (ClosedQueueException | InterruptedException e) {
 			// 队列被关闭或线程被中断，直接结束
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, "Unknown error in full detecting task of conf " + conf(), e);
 		}
 
 		return null;

@@ -33,13 +33,21 @@ public class BackupTask implements Callable<Void> {
 		this.relativePath = relativePath;
 	}
 
+	public Path fromFullPath() {
+		return conf.getFromPath().resolve(relativePath);
+	}
+
+	public Path toFullPath() {
+		return conf.getToPath().resolve(relativePath);
+	}
+
 	/**
 	 * 判断此任务是否需要执行（是否需要备份，如果from不存在，或两边文件内容相同/目录都存在，则不需要备份）。
 	 */
 	public boolean needBackup() {
 		try {
-			Path fromFullPath = conf.getFromPath().resolve(relativePath);
-			Path toFullPath = conf.getToPath().resolve(relativePath);
+			Path fromFullPath = fromFullPath();
+			Path toFullPath = toFullPath();
 
 			if (Files.notExists(fromFullPath))
 				return false;
@@ -127,6 +135,42 @@ public class BackupTask implements Callable<Void> {
 		} else if (Files.isSymbolicLink(path)) {
 			Files.deleteIfExists(path);
 		}
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((conf == null) ? 0 : conf.hashCode());
+		result = prime * result + ((relativePath == null) ? 0 : relativePath.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (!(obj instanceof BackupTask))
+			return false;
+		BackupTask other = (BackupTask) obj;
+		if (conf == null) {
+			if (other.conf != null)
+				return false;
+		} else if (!conf.equals(other.conf))
+			return false;
+		if (relativePath == null) {
+			if (other.relativePath != null)
+				return false;
+		} else if (!relativePath.equals(other.relativePath))
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "BackupTask [conf=" + conf + ", relativePath=" + relativePath + "]";
 	}
 
 }

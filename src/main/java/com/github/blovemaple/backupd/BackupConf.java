@@ -62,4 +62,10 @@ public class BackupConf {
 		return pathMatcher;
 	}
 
+	@Override
+	public String toString() {
+		return "BackupConf [fromPath=" + fromPath + ", toPath=" + toPath + ", filter=" + filter + ", type=" + type
+				+ "]";
+	}
+
 }

@@ -8,8 +8,9 @@ package com.github.blovemaple.backupd;
 public class Runner {
 
 	public static void main(String[] args) {
-		// TODO
-
+		try (BackupMachine machine = new BackupMachine()) {
+			
+		}
 	}
 
 }

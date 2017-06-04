@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 
 import com.github.blovemaple.backupd.BackupConf;
 import com.github.blovemaple.backupd.BackupDelayingQueue;
+import com.github.blovemaple.backupd.ClosedQueueException;
 
 /**
  * 检测任务，实现类实现某种方式检测需要备份的文件并提交给{@link BackupDelayingQueue}。
@@ -43,8 +44,10 @@ public abstract class DetectingTask implements Callable<Void> {
 	 * @param task
 	 *            任务
 	 * @throws InterruptedException
+	 * @throws IOException 
+	 * @throws ClosedQueueException 
 	 */
-	protected void submitBackupTask(BackupTask task) throws InterruptedException {
+	protected void submitBackupTask(BackupTask task) throws InterruptedException, ClosedQueueException, IOException {
 		queue.submit(task);
 	}
 
