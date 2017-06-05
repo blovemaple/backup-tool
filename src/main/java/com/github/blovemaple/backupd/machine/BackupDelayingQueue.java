@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.BlockingQueue;
@@ -15,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.github.blovemaple.backupd.plan.BackupConf;
 import com.github.blovemaple.backupd.plan.BackupTask;
 
 /**
@@ -30,6 +32,8 @@ public class BackupDelayingQueue implements Closeable {
 	 */
 	public static int DELAY_SECONDS = 3;
 
+	private final Map<BackupConf, BackupMonitor> monitors;
+
 	// 需要延迟等待的任务
 	private Map<BackupTask, Long> readyTimes = new HashMap<>();
 	private PriorityQueue<BackupTask> delayingTasks = new PriorityQueue<>(Comparator.comparing(readyTimes::get));
@@ -41,7 +45,9 @@ public class BackupDelayingQueue implements Closeable {
 
 	private volatile boolean closed = false;
 
-	public BackupDelayingQueue() {
+	public BackupDelayingQueue(Map<BackupConf, BackupMonitor> monitors) {
+		this.monitors = monitors;
+
 		delayingController = new Thread(new DelayingController());
 		delayingController.setName("delaying");
 		delayingController.setDaemon(true);
@@ -85,7 +91,7 @@ public class BackupDelayingQueue implements Closeable {
 							delayingTasks.wait(waitTime);
 
 							BackupTask nextReadyTaskNow = delayingTasks.peek();
-							if (nextReadyTaskNow != nextReadyTask){
+							if (nextReadyTaskNow != nextReadyTask) {
 								// 等待延迟期间delayingTasks队列头已改变，重新peek
 								logger.trace("Queue head is changed, repeek.");
 								continue PEEK_TASK;
@@ -126,6 +132,10 @@ public class BackupDelayingQueue implements Closeable {
 		if (closed)
 			throw new IllegalStateException("Already closed.");
 
+		BackupMonitor monitor = monitors.get(task.conf());
+		if (monitor != null)
+			monitor.taskQueued(task);
+
 		synchronized (delayingTasks) {
 			// 先从队列中删除该任务（如果已经有的话）
 			if (readyTimes.remove(task) != null)
@@ -152,6 +162,30 @@ public class BackupDelayingQueue implements Closeable {
 	private long getReadyTime(BackupTask task) throws IOException {
 		FileTime modifiedTime = Files.getLastModifiedTime(task.fromFullPath());
 		return modifiedTime.toMillis() + DELAY_SECONDS * 1000;
+	}
+
+	/**
+	 * 取消队列中指定配置的所有备份任务。
+	 * 
+	 * @param conf
+	 *            配置
+	 */
+	public void cancelConf(BackupConf conf) {
+		synchronized (delayingTasks) {
+			Iterator<BackupTask> itr = delayingTasks.iterator();
+			while (itr.hasNext()) {
+				BackupTask task = itr.next();
+				if (task.conf() == conf)
+					itr.remove();
+			}
+		}
+
+		Iterator<BackupTask> itr = readyTasks.iterator();
+		while (itr.hasNext()) {
+			BackupTask task = itr.next();
+			if (task.conf() == conf)
+				itr.remove();
+		}
 	}
 
 	/**

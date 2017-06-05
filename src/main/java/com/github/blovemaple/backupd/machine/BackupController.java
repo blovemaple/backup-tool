@@ -1,10 +1,16 @@
 package com.github.blovemaple.backupd.machine;
 
-import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.github.blovemaple.backupd.plan.BackupConf;
 import com.github.blovemaple.backupd.plan.BackupTask;
 
 /**
@@ -16,11 +22,13 @@ public class BackupController implements Runnable {
 	private static final Logger logger = LogManager.getLogger(BackupController.class);
 
 	private final BackupDelayingQueue queue;
+	private final Map<BackupConf, BackupMonitor> monitors;
 
 	private boolean closed = false;
 
-	public BackupController(BackupDelayingQueue queue) {
+	public BackupController(BackupDelayingQueue queue, Map<BackupConf, BackupMonitor> monitors) {
 		this.queue = queue;
+		this.monitors = monitors;
 	}
 
 	/**
@@ -32,15 +40,23 @@ public class BackupController implements Runnable {
 
 	@Override
 	public void run() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
 		try {
 			while (true) {
 				BackupTask task = queue.fetch(3);
 				if (task != null) {
+					Future<Void> future = executor.submit(task);
+
+					BackupMonitor monitor = monitors.get(task.conf());
+					if (monitor != null)
+						monitor.taskStarted(task, future);
+
 					try {
-						task.call();
-					} catch (IOException e) {
-						// 为了保证任务不中止，只打印而不抛出异常
+						future.get();
+					} catch (ExecutionException e) {
+						// 为了保证不中止，只打印而不抛出异常
 						logger.error(() -> "Error running backup task: " + task, e);
+					} catch (CancellationException e) {
 					}
 
 				} else {
@@ -50,6 +66,8 @@ public class BackupController implements Runnable {
 			}
 		} catch (InterruptedException e) {
 			// 线程被中断，直接结束
+		} finally {
+			executor.shutdownNow();
 		}
 	}
 

@@ -32,6 +32,10 @@ public class BackupTask implements Callable<Void> {
 		this.relativePath = relativePath;
 	}
 
+	public BackupConf conf() {
+		return conf;
+	}
+
 	public Path fromFullPath() {
 		return conf.getFromPath().resolve(relativePath);
 	}

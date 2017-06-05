@@ -23,18 +23,22 @@ import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class RealTimeDetectingTask extends DetectingTask {
+public class RealTimeDetectingTask implements Runnable {
 	private static final Logger logger = LogManager.getLogger(RealTimeDetectingTask.class);
 
+	private final BackupConf conf;
+	private final BackupDelayingQueue queue;
+
 	public RealTimeDetectingTask(BackupConf conf, BackupDelayingQueue queue) {
-		super(conf, queue);
+		this.conf = conf;
+		this.queue = queue;
 	}
 
 	@Override
-	public Void call() throws IOException {
-		Path fromPath = conf().getFromPath();
+	public void run() {
+		Path fromPath = conf.getFromPath();
 
-		PathMatcher pathMatcher = conf().newPathMatcher();
+		PathMatcher pathMatcher = conf.newPathMatcher();
 
 		try (WatchService watcher = fromPath.getFileSystem().newWatchService()) {
 
@@ -47,39 +51,40 @@ public class RealTimeDetectingTask extends DetectingTask {
 			}));
 
 			// 循环处理事件
-			try {
-				while (true) {
-					WatchKey eventKey = watcher.take();
-					try {
-						eventKey.pollEvents().stream().forEach(rethrowConsumer(event -> {
-							Path eventPath = (Path) event.context(); // 注册路径到事件路径的相对路径
-							Path relativePath = pathsByKey.get(eventKey).resolve(eventPath); // fromPath到事件路径的相对路径
+			while (true) {
+				WatchKey eventKey = watcher.take();
+				try {
+					eventKey.pollEvents().stream().forEach(rethrowConsumer(event -> {
+						Path eventPath = (Path) event.context(); // 注册路径到事件路径的相对路径
+						Path relativePath = pathsByKey.get(eventKey).resolve(eventPath); // fromPath到事件路径的相对路径
 
-							if (pathMatcher.matches(relativePath))
-								submitBackupTask(new BackupTask(conf(), relativePath));
+						if (pathMatcher.matches(relativePath))
+							queue.submit(new BackupTask(conf, relativePath));
 
-							if (event.kind() == ENTRY_CREATE) {
-								Path newPath = fromPath.resolve(relativePath); // 绝对路径
-								if (Files.isDirectory(newPath)) {
-									WatchKey key = newPath.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-									pathsByKey.put(key, relativePath);
-								}
+						if (event.kind() == ENTRY_CREATE) {
+							Path newPath = fromPath.resolve(relativePath); // 绝对路径
+							if (Files.isDirectory(newPath)) {
+								WatchKey key = newPath.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
+								pathsByKey.put(key, relativePath);
 							}
-						}));
-					} catch (Exception e) {
-						// 为了保证任务不中止，只打印而不抛出异常
-						logger.error(() -> "Error handling event of path: " + pathsByKey.get(eventKey), e);
-					}
-					boolean isStillValid = eventKey.reset();
-					if (!isStillValid)
-						pathsByKey.remove(eventKey);
+						}
+					}));
+				} catch (Exception e) {
+					// 为了保证任务不中止，只打印而不抛出异常
+					logger.error(() -> "Error handling event of path: " + pathsByKey.get(eventKey), e);
 				}
-			} catch (InterruptedException e) {
+				boolean isStillValid = eventKey.reset();
+				if (!isStillValid)
+					pathsByKey.remove(eventKey);
 			}
 
+		} catch (InterruptedException e) {
+			// 线程被中断，直接结束
+		} catch (IOException e) {
+			logger.error(() -> "IO error in real-time detecting task of conf " + conf, e);
+		} catch (Exception e) {
+			logger.error(() -> "Unknown error in real-time detecting task of conf " + conf, e);
 		}
-
-		return null;
 	}
 
 }

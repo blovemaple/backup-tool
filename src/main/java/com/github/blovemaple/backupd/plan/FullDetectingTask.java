@@ -18,46 +18,52 @@ import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class FullDetectingTask extends DetectingTask {
+public class FullDetectingTask implements Runnable {
 	private static final Logger logger = LogManager.getLogger(FullDetectingTask.class);
 
+	private final BackupConf conf;
+	private final BackupDelayingQueue queue;
+
 	public FullDetectingTask(BackupConf conf, BackupDelayingQueue queue) {
-		super(conf, queue);
+		this.conf = conf;
+		this.queue = queue;
 	}
 
 	@Override
-	public Void call() throws IOException {
-		Path fromPath = conf().getFromPath();
-		Path toPath = conf().getToPath();
+	public void run() {
+		Path fromPath = conf.getFromPath();
+		Path toPath = conf.getToPath();
 
 		if (Files.notExists(fromPath)) {
-			return null;
+			return;
 		}
 
-		PathMatcher pathMatcher = conf().newPathMatcher();
+		PathMatcher pathMatcher = conf.newPathMatcher();
 
 		try {
 			// 遍历fromPath和toPath下所有的Path，生成所有相对路径
-			Stream.concat(Files.walk(fromPath).map(fromPath::relativize), Files.walk(toPath).map(toPath::relativize))
+			Stream<Path> pathStream = Files.walk(fromPath).map(fromPath::relativize);
+			if (Files.isDirectory(toPath))
+				pathStream = Stream.concat(pathStream, Files.walk(toPath).map(toPath::relativize));
+
+			pathStream
 					// 去重
 					.distinct()
 					// 根据配置过滤
 					.filter(pathMatcher::matches)
 					// 为每个Path创建BackupTask
-					.map(relativePath -> new BackupTask(conf(), relativePath))
+					.map(relativePath -> new BackupTask(conf, relativePath))
 					// 过滤出需要备份的task
 					.filter(rethrowPredicate(BackupTask::needBackup))
 					// 提交到队列
-					.forEachOrdered(rethrowConsumer(this::submitBackupTask));
-		} catch (IOException e) {
-			throw new IOException("Error walking from-path: " + fromPath, e);
+					.forEachOrdered(rethrowConsumer(queue::submit));
 		} catch (InterruptedException e) {
 			// 线程被中断，直接结束
+		} catch (IOException e) {
+			logger.error(() -> "IO error in full detecting task of conf " + conf, e);
 		} catch (Exception e) {
-			logger.error(() -> "Unknown error in full detecting task of conf " + conf(), e);
+			logger.error(() -> "Unknown error in full detecting task of conf " + conf, e);
 		}
-
-		return null;
 	}
 
 }

@@ -4,72 +4,30 @@ import static com.github.blovemaple.backupd.plan.BackupConf.BackupConfType.*;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.util.HashMap;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
 import com.github.blovemaple.backupd.plan.BackupConf;
 import com.github.blovemaple.backupd.plan.BackupTask;
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 
-public class BackupDelayingQueueTest {
-	private static FileSystem fs;
+public class BackupDelayingQueueTest extends TestBase {
 	private BackupDelayingQueue queue;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-		BackupDelayingQueue.DELAY_SECONDS = 3;
-		fs = Jimfs.newFileSystem(Configuration.unix());
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		fs.close();
-	}
-
 	@Before
-	public void setUp() throws Exception {
-		queue = new BackupDelayingQueue();
-		Files.createDirectories(fs.getPath("/org"));
+	public void setUp1() throws Exception {
+		queue = new BackupDelayingQueue(new HashMap<>());
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown1() throws Exception {
 		queue.close();
-		deleteDir(fs.getPath("/org"));
-		deleteDir(fs.getPath("/dst"));
-	}
-
-	private void deleteDir(Path path) throws IOException {
-		if (Files.notExists(path))
-			return;
-		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				super.visitFile(file, attrs);
-				Files.deleteIfExists(file);
-				return FileVisitResult.CONTINUE;
-			}
-
-			@Override
-			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-				super.postVisitDirectory(dir, exc);
-				Files.deleteIfExists(dir);
-				return FileVisitResult.CONTINUE;
-			}
-		});
 	}
 
 	@Test

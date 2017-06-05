@@ -31,6 +31,6 @@ public class FileHashing {
 				hasher.putBytes(bytes, 0, len);
 			}
 		}
-		return hasher.toString();
+		return hasher.hash().toString();
 	}
 }
