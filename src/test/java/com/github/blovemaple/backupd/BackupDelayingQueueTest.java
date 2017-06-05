@@ -117,8 +117,35 @@ public class BackupDelayingQueueTest {
 		assertEquals(delayLongTask, queue.fetch(3));
 	}
 
+	@Test
+	public void testRequeue() throws Exception {
+		Path fileRequeue = fs.getPath("/org/requeue.file");
+		Files.createFile(fileRequeue);
+
+		Path file = fs.getPath("/org/file");
+		Files.createFile(file);
+		Files.setLastModifiedTime(file, FileTime.fromMillis(System.currentTimeMillis() - 1000));
+
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), ONCE);
+
+		@SuppressWarnings("unused")
+		BackupTask requeueTask = submit(conf, "requeue.file");
+		BackupTask fileTask = submit("file");
+
+		Files.setLastModifiedTime(fileRequeue, FileTime.fromMillis(System.currentTimeMillis() - 2000));
+		BackupTask requeueTask1 = submit(conf, "requeue.file");
+
+		assertEquals(requeueTask1, queue.fetch(3));
+		assertEquals(fileTask, queue.fetch(3));
+		assertNull(queue.fetch(2));
+	}
+
 	private BackupTask submit(String fileName) throws InterruptedException, IOException {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), ONCE);
+		return submit(conf, fileName);
+	}
+
+	private BackupTask submit(BackupConf conf, String fileName) throws InterruptedException, IOException {
 		BackupTask task = new BackupTask(conf, fs.getPath(fileName));
 		queue.submit(task);
 		return task;
