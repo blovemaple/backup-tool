@@ -21,6 +21,7 @@ import org.junit.Test;
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
 import com.github.blovemaple.backupd.plan.BackupConf;
 import com.github.blovemaple.backupd.plan.BackupTask;
+import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 public class BackupDelayingQueueTest {
@@ -30,7 +31,7 @@ public class BackupDelayingQueueTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		BackupDelayingQueue.DELAY_SECONDS = 3;
-		fs = Jimfs.newFileSystem();
+		fs = Jimfs.newFileSystem(Configuration.unix());
 	}
 
 	@AfterClass

@@ -43,6 +43,7 @@ public class BackupDelayingQueue implements Closeable {
 
 	public BackupDelayingQueue() {
 		delayingController = new Thread(new DelayingController());
+		delayingController.setName("delaying");
 		delayingController.setDaemon(true);
 		delayingController.start();
 	}
@@ -60,11 +61,16 @@ public class BackupDelayingQueue implements Closeable {
 						if (Thread.interrupted())
 							return;
 
+						logger.trace("Starting to peek.");
+
 						// 取delayingTasks队列头（最近将要ready的task），若队列为空则等待
 						BackupTask nextReadyTask;
 						while ((nextReadyTask = delayingTasks.peek()) == null) {
+							logger.trace("Peek empty, waiting.");
 							delayingTasks.wait();
+							logger.trace("Waked up.");
 						}
+						logger.trace("Peek " + nextReadyTask);
 
 						// 取readyTime
 						Long readyTime = readyTimes.get(nextReadyTask);
@@ -74,13 +80,16 @@ public class BackupDelayingQueue implements Closeable {
 						// 计算需要延迟的时间
 						long waitTime = readyTime - System.currentTimeMillis();
 						while (waitTime > 0) {
+							logger.trace("Delaying time " + waitTime + ", waiting.");
 							// 在delayingTasks上等待延迟
 							delayingTasks.wait(waitTime);
 
 							BackupTask nextReadyTaskNow = delayingTasks.peek();
-							if (nextReadyTaskNow != nextReadyTask)
+							if (nextReadyTaskNow != nextReadyTask){
 								// 等待延迟期间delayingTasks队列头已改变，重新peek
+								logger.trace("Queue head is changed, repeek.");
 								continue PEEK_TASK;
+							}
 
 							waitTime = readyTime - System.currentTimeMillis();
 						}
@@ -158,7 +167,9 @@ public class BackupDelayingQueue implements Closeable {
 		if (closed)
 			throw new IllegalStateException("Already closed.");
 
-		return readyTasks.poll(waitingSeconds, TimeUnit.SECONDS);
+		BackupTask task = readyTasks.poll(waitingSeconds, TimeUnit.SECONDS);
+		logger.debug(() -> "Fetch: " + task);
+		return task;
 	}
 
 	@Override
