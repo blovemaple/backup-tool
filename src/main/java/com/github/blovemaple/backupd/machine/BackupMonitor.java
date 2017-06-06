@@ -63,10 +63,15 @@ public class BackupMonitor implements Future<Void> {
 	}
 
 	public void taskStarted(BackupTask task, Future<?> future) {
-		queuedTasks.remove(task);
-		startedTasks.put(task, future);
+		doneWaitingLock.lock();
+		try {
+			queuedTasks.remove(task);
+			startedTasks.put(task, future);
 
-		taskStartCondition.signalAll();
+			taskStartCondition.signalAll();
+		} finally {
+			doneWaitingLock.unlock();
+		}
 	}
 
 	private class RunningMonitorTask implements Runnable {

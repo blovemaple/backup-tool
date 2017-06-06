@@ -49,6 +49,8 @@ public class DetectingTask implements Runnable {
 
 	@Override
 	public synchronized void run() {
+		logger.info(() -> "Started detecting task for " + conf);
+
 		running = true;
 
 		ExecutorService executor = Executors.newCachedThreadPool();
@@ -56,8 +58,9 @@ public class DetectingTask implements Runnable {
 
 		try {
 			// 如果conf是daemon的，则先开启实时检测
-			if (conf.getType() == BackupConfType.DAEMON)
+			if (conf.getType() == BackupConfType.DAEMON) {
 				realTimeDetecting = executor.submit(new RealTimeDetectingTask(conf, queue));
+			}
 
 			// 无论daemon还是一次性备份，都要执行完整检测
 			fullDetecting = executor.submit(new FullDetectingTask(conf, queue));
@@ -74,6 +77,8 @@ public class DetectingTask implements Runnable {
 		} finally {
 			executor.shutdownNow();
 			running = false;
+
+			logger.info(() -> "Ended detecting task for " + conf);
 		}
 	}
 

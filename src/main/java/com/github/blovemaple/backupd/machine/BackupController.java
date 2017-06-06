@@ -24,22 +24,15 @@ public class BackupController implements Runnable {
 	private final BackupDelayingQueue queue;
 	private final Map<BackupConf, BackupMonitor> monitors;
 
-	private boolean closed = false;
-
 	public BackupController(BackupDelayingQueue queue, Map<BackupConf, BackupMonitor> monitors) {
 		this.queue = queue;
 		this.monitors = monitors;
 	}
 
-	/**
-	 * 关闭，当queue中无任务时执行结束。
-	 */
-	public void close() {
-		closed = true;
-	}
-
 	@Override
 	public void run() {
+		logger.info(() -> "Started backup controller.");
+
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		try {
 			while (true) {
@@ -59,13 +52,13 @@ public class BackupController implements Runnable {
 					} catch (CancellationException e) {
 					}
 
-				} else {
-					if (closed)
-						return;
+					logger.info(() -> "Completed backup task " + task);
 				}
 			}
 		} catch (InterruptedException e) {
 			// 线程被中断，直接结束
+		} catch (Exception e) {
+			logger.fatal("Backup controller exception.", e);
 		} finally {
 			executor.shutdownNow();
 		}

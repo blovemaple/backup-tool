@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -100,18 +101,22 @@ public class BackupTask implements Callable<Void> {
 		if (!needBackup())
 			return null;
 
+		if (Files.notExists(conf.getToPath())) {
+			Files.createDirectories(conf.getToPath());
+		} else if (!Files.isDirectory(conf.getToPath())) {
+			throw new NotDirectoryException(conf.getToPath().toString());
+		}
+
 		Path fromFullPath = conf.getFromPath().resolve(relativePath);
 		Path toFullPath = conf.getToPath().resolve(relativePath);
 
-		if (Files.isDirectory(fromFullPath)) {
-			delete(toFullPath);
+		delete(toFullPath);
+		prepareParent(toFullPath);
+		if (Files.isDirectory(fromFullPath))
 			Files.createDirectories(toFullPath);
-
-		} else if (Files.isRegularFile(fromFullPath)) {
-			delete(toFullPath);
+		else if (Files.isRegularFile(fromFullPath))
 			Files.copy(fromFullPath, toFullPath, StandardCopyOption.COPY_ATTRIBUTES);
 
-		}
 		return null;
 	}
 
@@ -137,6 +142,16 @@ public class BackupTask implements Callable<Void> {
 			Files.deleteIfExists(path);
 		} else if (Files.isSymbolicLink(path)) {
 			Files.deleteIfExists(path);
+		}
+	}
+
+	private void prepareParent(Path fullPath) throws IOException {
+		Path parent = fullPath.getParent();
+		if (Files.notExists(parent)) {
+			Files.createDirectories(parent);
+		} else if (!Files.isDirectory(parent)) {
+			Files.deleteIfExists(parent);
+			Files.createDirectory(parent);
 		}
 	}
 

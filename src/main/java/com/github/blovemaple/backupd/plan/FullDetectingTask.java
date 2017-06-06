@@ -31,6 +31,8 @@ public class FullDetectingTask implements Runnable {
 
 	@Override
 	public void run() {
+		logger.info(() -> "Started full detecting for " + conf);
+
 		Path fromPath = conf.getFromPath();
 		Path toPath = conf.getToPath();
 
@@ -64,6 +66,8 @@ public class FullDetectingTask implements Runnable {
 		} catch (Exception e) {
 			logger.error(() -> "Unknown error in full detecting task of conf " + conf, e);
 		}
+
+		logger.info(() -> "Ended full detecting for " + conf);
 	}
 
 }

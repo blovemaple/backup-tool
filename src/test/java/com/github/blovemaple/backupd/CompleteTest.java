@@ -1,12 +1,11 @@
 package com.github.blovemaple.backupd;
 
 import static com.github.blovemaple.backupd.plan.BackupConf.BackupConfType.*;
-import static org.junit.Assert.*;
 import static com.github.blovemaple.backupd.utils.FileHashing.*;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -56,14 +55,14 @@ public class CompleteTest extends TestBase {
 	}
 
 	private void assertEqualFiles(String relativePath) throws IOException {
-		if (Files.isRegularFile(Paths.get("/org/" + relativePath))) {
-			String orgHash = fileHash(Paths.get("/org/" + relativePath));
-			String dstHash = fileHash(Paths.get("/dst/" + relativePath));
+		if (Files.isRegularFile(fs.getPath("/org/" + relativePath))) {
+			String orgHash = fileHash(fs.getPath("/org/" + relativePath));
+			String dstHash = fileHash(fs.getPath("/dst/" + relativePath));
 			assertEquals(orgHash, dstHash);
-		} else if (Files.isDirectory(Paths.get("/org/" + relativePath))) {
-			assertTrue(Files.isDirectory(Paths.get("/dst/" + relativePath)));
+		} else if (Files.isDirectory(fs.getPath("/org/" + relativePath))) {
+			assertTrue(Files.isDirectory(fs.getPath("/dst/" + relativePath)));
 		} else {
-			fail("May not exists? " + Paths.get("/org/" + relativePath));
+			fail("May not exists? " + fs.getPath("/org/" + relativePath));
 		}
 
 	}

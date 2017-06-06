@@ -36,6 +36,8 @@ public class RealTimeDetectingTask implements Runnable {
 
 	@Override
 	public void run() {
+		logger.info(() -> "Started real time detecting for " + conf);
+
 		Path fromPath = conf.getFromPath();
 
 		PathMatcher pathMatcher = conf.newPathMatcher();
@@ -85,6 +87,8 @@ public class RealTimeDetectingTask implements Runnable {
 		} catch (Exception e) {
 			logger.error(() -> "Unknown error in real-time detecting task of conf " + conf, e);
 		}
+
+		logger.info(() -> "Ended real time detecting for " + conf);
 	}
 
 }
