@@ -1,2 +1,3 @@
-Backup files based on Java NIO file system interface.
+A files backup tool based on Java NIO file system API.
+
 Under development.
