@@ -69,6 +69,11 @@ public class CompleteTest extends TestBase {
 	}
 
 	@Test
+	public void testFilterOnce() throws Exception {
+		// TODO
+	}
+
+	@Test
 	public void testFullRealtime() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
 		machine.execute(conf);
@@ -103,7 +108,12 @@ public class CompleteTest extends TestBase {
 
 	@Test
 	public void testFastModRealtime() throws Exception {
+		// TODO
+	}
 
+	@Test
+	public void testFilterRealtime() throws Exception {
+		// TODO
 	}
 
 	private void assertSuccess() throws IOException {
