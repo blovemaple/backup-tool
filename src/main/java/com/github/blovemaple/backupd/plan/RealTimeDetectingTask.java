@@ -69,6 +69,8 @@ public class RealTimeDetectingTask implements Runnable {
 							if (Files.isDirectory(newPath)) {
 								WatchKey key = newPath.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
 								pathsByKey.put(key, relativePath);
+								// 新目录注册到watcher后进行一次全量检测，以免此前新目录内已经新建了子目录或文件而漏掉
+								fullDetect(newPath);
 							}
 						}
 					}));
@@ -92,6 +94,23 @@ public class RealTimeDetectingTask implements Runnable {
 		}
 
 		logger.info(() -> "Ended real time detecting for " + conf);
+	}
+
+	private void fullDetect(Path fullPath) throws IOException, RuntimeException, Exception {
+		PathMatcher pathMatcher = conf.newPathMatcher();
+		Files.walk(fullPath).map(conf.getFromPath()::relativize)
+				// 去掉dir本身
+				.filter(path -> !path.toString().isEmpty())
+				// 去重
+				.distinct()
+				// 根据配置过滤
+				.filter(pathMatcher::matches)
+				// 为每个Path创建BackupTask
+				.map(relativePath -> new BackupTask(conf, relativePath))
+				// 过滤出需要备份的task
+				.filter(rethrowPredicate(BackupTask::needBackup))
+				// 提交到队列
+				.forEachOrdered(rethrowConsumer(queue::submit));
 	}
 
 }

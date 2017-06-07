@@ -3,6 +3,7 @@ package com.github.blovemaple.backupd.machine;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -160,8 +161,13 @@ public class BackupDelayingQueue implements Closeable {
 	}
 
 	private long getReadyTime(BackupTask task) throws IOException {
-		FileTime modifiedTime = Files.getLastModifiedTime(task.fromFullPath());
-		return modifiedTime.toMillis() + DELAY_SECONDS * 1000;
+		try {
+			FileTime modifiedTime = Files.getLastModifiedTime(task.fromFullPath());
+			return modifiedTime.toMillis() + DELAY_SECONDS * 1000;
+		} catch (NoSuchFileException e) {
+			// 文件被删除，不delay
+			return System.currentTimeMillis();
+		}
 	}
 
 	/**

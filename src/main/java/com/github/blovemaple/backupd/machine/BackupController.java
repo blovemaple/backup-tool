@@ -36,7 +36,7 @@ public class BackupController implements Runnable {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		try {
 			while (true) {
-				BackupTask task = queue.fetch(3);
+				BackupTask task = queue.fetch(10);
 				if (task != null) {
 					Future<Void> future = executor.submit(task);
 

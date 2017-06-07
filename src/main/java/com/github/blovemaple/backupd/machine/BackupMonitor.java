@@ -77,7 +77,6 @@ public class BackupMonitor implements Future<Void> {
 	private class RunningMonitorTask implements Runnable {
 		@Override
 		public void run() {
-			doneWaitingLock.lock();
 			try {
 				while (!detectingFuture.isDone()) {
 					try {
@@ -86,22 +85,25 @@ public class BackupMonitor implements Future<Void> {
 					}
 				}
 
-				while (!queuedTasks.isEmpty())
-					taskStartCondition.await();
+				doneWaitingLock.lock();
+				try {
+					while (!queuedTasks.isEmpty())
+						taskStartCondition.await();
 
-				for (Future<?> backupFuture : startedTasks.values()) {
-					try {
-						backupFuture.get();
-					} catch (ExecutionException | CancellationException e) {
+					for (Future<?> backupFuture : startedTasks.values()) {
+						try {
+							backupFuture.get();
+						} catch (ExecutionException | CancellationException e) {
+						}
 					}
-				}
 
-				logger.info(() -> "Conf done: " + conf);
-				done = true;
-				doneCondition.signalAll();
+					logger.info(() -> "Conf done: " + conf);
+					done = true;
+					doneCondition.signalAll();
+				} finally {
+					doneWaitingLock.unlock();
+				}
 			} catch (InterruptedException e) {
-			} finally {
-				doneWaitingLock.unlock();
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -16,6 +17,7 @@ import org.junit.BeforeClass;
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import com.google.common.jimfs.WatchServiceConfiguration;
 
 public class TestBase {
 	protected static FileSystem fs;
@@ -23,7 +25,8 @@ public class TestBase {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		BackupDelayingQueue.DELAY_SECONDS = 3;
-		fs = Jimfs.newFileSystem(Configuration.unix());
+		fs = Jimfs.newFileSystem(Configuration.unix().toBuilder()
+				.setWatchServiceConfiguration(WatchServiceConfiguration.polling(1, TimeUnit.SECONDS)).build());
 	}
 
 	@AfterClass

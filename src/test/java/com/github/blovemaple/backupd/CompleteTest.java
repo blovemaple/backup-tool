@@ -72,13 +72,33 @@ public class CompleteTest extends TestBase {
 	public void testFullRealtime() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
 		machine.execute(conf);
-		TimeUnit.SECONDS.sleep(5);
+		TimeUnit.SECONDS.sleep(4);
 		assertSuccess();
 	}
 
 	@Test
 	public void testIncrRealtime() throws Exception {
+		testFullOnce();
 
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
+		machine.execute(conf);
+
+		TimeUnit.SECONDS.sleep(1);
+
+		Files.delete(fs.getPath("/org/dir1/dir11/file111"));
+		Files.delete(fs.getPath("/org/dir1/dir11/file112"));
+		Files.delete(fs.getPath("/org/dir1/dir11"));
+
+		Files.createDirectories(fs.getPath("/org/dir3"));
+		Files.createDirectories(fs.getPath("/org/dir3/dir21"));
+		Files.createFile(fs.getPath("/org/dir3/file21"));
+		Files.createFile(fs.getPath("/org/dir3/file22"));
+
+		Files.write(fs.getPath("/org/dir1/file11"), Arrays.asList("123", "abc"));
+
+		TimeUnit.SECONDS.sleep(4);
+
+		assertSuccess();
 	}
 
 	@Test
