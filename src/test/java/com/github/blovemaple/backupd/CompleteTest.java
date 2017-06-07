@@ -3,9 +3,13 @@ package com.github.blovemaple.backupd;
 import static com.github.blovemaple.backupd.plan.BackupConf.BackupConfType.*;
 import static com.github.blovemaple.backupd.utils.FileHashing.*;
 import static org.junit.Assert.*;
+import static com.github.blovemaple.backupd.utils.LambdaUtils.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -35,7 +39,7 @@ public class CompleteTest extends TestBase {
 		Files.createFile(fs.getPath("/org/dir1/dir11/file112"));
 	}
 
-	@Test
+	// @Test
 	public void testFullOnce() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), ONCE);
 		BackupMonitor monitor = machine.execute(conf);
@@ -43,26 +47,61 @@ public class CompleteTest extends TestBase {
 		assertSuccess();
 	}
 
-	private void assertSuccess() throws IOException {
-		assertEqualFiles("file1");
-		assertEqualFiles("file2");
-		assertEqualFiles("dir1");
-		assertEqualFiles("dir1/file11");
-		assertEqualFiles("dir1/file12");
-		assertEqualFiles("dir1/dir11");
-		assertEqualFiles("dir1/dir11/file111");
-		assertEqualFiles("dir1/dir11/file112");
+	@Test
+	public void testIncrOnce() throws Exception {
+		testFullOnce();
+
+		Files.delete(fs.getPath("/org/dir1/dir11/file111"));
+		Files.delete(fs.getPath("/org/dir1/dir11/file112"));
+		Files.delete(fs.getPath("/org/dir1/dir11"));
+
+		Files.createDirectories(fs.getPath("/org/dir2"));
+		Files.createFile(fs.getPath("/org/dir2/file21"));
+		Files.createFile(fs.getPath("/org/dir2/file22"));
+
+		Files.write(fs.getPath("/org/dir1/file11"), Arrays.asList("123", "abc"));
+
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), ONCE);
+		BackupMonitor monitor = machine.execute(conf);
+		monitor.get();
+
+		assertSuccess();
 	}
 
-	private void assertEqualFiles(String relativePath) throws IOException {
-		if (Files.isRegularFile(fs.getPath("/org/" + relativePath))) {
-			String orgHash = fileHash(fs.getPath("/org/" + relativePath));
-			String dstHash = fileHash(fs.getPath("/dst/" + relativePath));
+	@Test
+	public void testFullRealtime() throws Exception {
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
+		machine.execute(conf);
+		TimeUnit.SECONDS.sleep(5);
+		assertSuccess();
+	}
+
+	@Test
+	public void testIncrRealtime() throws Exception {
+
+	}
+
+	@Test
+	public void testFastModRealtime() throws Exception {
+
+	}
+
+	private void assertSuccess() throws IOException {
+		Path org = fs.getPath("/org");
+		Files.walk(org).map(org::relativize).forEach(rethrowConsumer(this::assertEqualFiles));
+	}
+
+	private void assertEqualFiles(Path relativePath) throws IOException {
+		Path org = fs.getPath("/org");
+		Path dst = fs.getPath("/dst");
+		if (Files.isRegularFile(org.resolve(relativePath))) {
+			String orgHash = fileHash(org.resolve(relativePath));
+			String dstHash = fileHash(dst.resolve(relativePath));
 			assertEquals(orgHash, dstHash);
-		} else if (Files.isDirectory(fs.getPath("/org/" + relativePath))) {
-			assertTrue(Files.isDirectory(fs.getPath("/dst/" + relativePath)));
+		} else if (Files.isDirectory(org.resolve(relativePath))) {
+			assertTrue(Files.isDirectory(dst.resolve(relativePath)));
 		} else {
-			fail("May not exists? " + fs.getPath("/org/" + relativePath));
+			fail("May not exists? " + org.resolve(relativePath));
 		}
 
 	}

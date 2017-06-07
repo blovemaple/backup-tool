@@ -49,6 +49,8 @@ public class FullDetectingTask implements Runnable {
 				pathStream = Stream.concat(pathStream, Files.walk(toPath).map(toPath::relativize));
 
 			pathStream
+					// 去掉fromPath和toPath本身
+					.filter(path -> !path.toString().isEmpty())
 					// 去重
 					.distinct()
 					// 根据配置过滤

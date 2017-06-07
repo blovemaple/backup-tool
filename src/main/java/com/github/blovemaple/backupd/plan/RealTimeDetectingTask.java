@@ -4,6 +4,7 @@ import static com.github.blovemaple.backupd.utils.LambdaUtils.*;
 import static java.nio.file.StandardWatchEventKinds.*;
 
 import java.io.IOException;
+import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -82,6 +83,8 @@ public class RealTimeDetectingTask implements Runnable {
 
 		} catch (InterruptedException e) {
 			// 线程被中断，直接结束
+		} catch (ClosedWatchServiceException e) {
+			// WatchService被关闭，直接结束
 		} catch (IOException e) {
 			logger.error(() -> "IO error in real-time detecting task of conf " + conf, e);
 		} catch (Exception e) {
