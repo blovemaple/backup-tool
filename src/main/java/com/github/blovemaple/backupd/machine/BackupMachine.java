@@ -44,7 +44,7 @@ public class BackupMachine implements Closeable {
 			if (monitor != null && !monitor.isDone())
 				return monitor;
 
-			monitor = new BackupMonitor(conf);
+			monitor = new BackupMonitor(conf, queue);
 			monitors.put(conf, monitor);
 		}
 

@@ -54,7 +54,7 @@ public class BackupTask implements Callable<Void> {
 			Path toFullPath = toFullPath();
 
 			if (Files.notExists(fromFullPath))
-				return false;
+				return Files.exists(toFullPath);
 
 			if (Files.isDirectory(fromFullPath)) {
 				if (!Files.isDirectory(toFullPath))
@@ -110,6 +110,10 @@ public class BackupTask implements Callable<Void> {
 		Path fromFullPath = conf.getFromPath().resolve(relativePath);
 		Path toFullPath = conf.getToPath().resolve(relativePath);
 
+		if (Files.notExists(fromFullPath))
+			// 若源文件不存在，则不删除目标文件
+			return null;
+
 		delete(toFullPath);
 		prepareParent(toFullPath);
 		if (Files.isDirectory(fromFullPath))
@@ -147,6 +151,8 @@ public class BackupTask implements Callable<Void> {
 
 	private void prepareParent(Path fullPath) throws IOException {
 		Path parent = fullPath.getParent();
+		if (parent == null)
+			return;
 		if (Files.notExists(parent)) {
 			Files.createDirectories(parent);
 		} else if (!Files.isDirectory(parent)) {

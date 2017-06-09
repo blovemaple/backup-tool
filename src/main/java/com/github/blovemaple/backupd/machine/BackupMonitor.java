@@ -32,7 +32,7 @@ public class BackupMonitor implements Future<Void> {
 	private List<BackupTask> queuedTasks = Collections.synchronizedList(new LinkedList<>());
 	private Map<BackupTask, Future<?>> startedTasks = Collections.synchronizedMap(new HashMap<>());
 
-	private BackupDelayingQueue queue;
+	private final BackupDelayingQueue queue;
 
 	private final Thread runningMonitor;
 	private final Lock doneWaitingLock = new ReentrantLock();
@@ -42,8 +42,11 @@ public class BackupMonitor implements Future<Void> {
 	private boolean done = false;
 	private boolean cancelled = false;
 
-	public BackupMonitor(BackupConf conf) {
+	public BackupMonitor(BackupConf conf, BackupDelayingQueue queue) {
 		this.conf = conf;
+		this.queue = queue;
+
+		// 创建runningMonitor但不启动
 		runningMonitor = new Thread(new RunningMonitorTask());
 		runningMonitor.setDaemon(true);
 		runningMonitor.setName("running-monitor");

@@ -45,6 +45,8 @@ public class CompleteTest extends TestBase {
 		BackupMonitor monitor = machine.execute(conf);
 		monitor.get();
 		assertSuccess();
+
+		monitor.cancel(true);
 	}
 
 	@Test
@@ -66,29 +68,78 @@ public class CompleteTest extends TestBase {
 		monitor.get();
 
 		assertSuccess();
+
+		monitor.cancel(true);
 	}
 
 	@Test
 	public void testFilterOnce() throws Exception {
-		// TODO
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), "**/*11", ONCE);
+		BackupMonitor monitor = machine.execute(conf);
+		monitor.get();
+		assertFilterSuccess();
+
+		monitor.cancel(true);
 	}
 
 	@Test
 	public void testFullRealtime() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
-		machine.execute(conf);
+		BackupMonitor monitor = machine.execute(conf);
 		TimeUnit.SECONDS.sleep(4);
 		assertSuccess();
+
+		monitor.cancel(true);
 	}
 
 	@Test
 	public void testIncrRealtime() throws Exception {
-		testFullOnce();
-
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
-		machine.execute(conf);
+		BackupMonitor monitor = machine.execute(conf);
 
-		TimeUnit.SECONDS.sleep(1);
+		TimeUnit.SECONDS.sleep(4);
+
+		Files.delete(fs.getPath("/org/dir1/dir11/file111"));
+		Files.delete(fs.getPath("/org/dir1/dir11/file112"));
+		Files.delete(fs.getPath("/org/dir1/dir11"));
+
+		Files.createDirectories(fs.getPath("/org/dir3"));
+		Files.createDirectories(fs.getPath("/org/dir3/dir21"));
+		Files.createFile(fs.getPath("/org/dir3/file21"));
+		Files.createFile(fs.getPath("/org/dir3/file22"));
+
+		Files.write(fs.getPath("/org/dir1/file11"), Arrays.asList("123", "abc"));
+		TimeUnit.SECONDS.sleep(4);
+
+		assertSuccess();
+
+		monitor.cancel(true);
+	}
+
+	@Test
+	public void testFastModRealtime() throws Exception {
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
+		BackupMonitor monitor = machine.execute(conf);
+
+		TimeUnit.SECONDS.sleep(4);
+
+		for (int i = 0; i < 3; i++) {
+			Files.write(fs.getPath("/org/dir1/file11"), Arrays.asList("123" + i, "abc"));
+			TimeUnit.SECONDS.sleep(1);
+		}
+		TimeUnit.SECONDS.sleep(3);
+
+		assertSuccess();
+
+		monitor.cancel(true);
+	}
+
+	@Test
+	public void testFilterRealtime() throws Exception {
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), "**/*11", DAEMON);
+		BackupMonitor monitor = machine.execute(conf);
+
+		TimeUnit.SECONDS.sleep(4);
 
 		Files.delete(fs.getPath("/org/dir1/dir11/file111"));
 		Files.delete(fs.getPath("/org/dir1/dir11/file112"));
@@ -103,22 +154,25 @@ public class CompleteTest extends TestBase {
 
 		TimeUnit.SECONDS.sleep(4);
 
-		assertSuccess();
-	}
+		assertFilterSuccess();
 
-	@Test
-	public void testFastModRealtime() throws Exception {
-		// TODO
-	}
-
-	@Test
-	public void testFilterRealtime() throws Exception {
-		// TODO
+		monitor.cancel(true);
 	}
 
 	private void assertSuccess() throws IOException {
 		Path org = fs.getPath("/org");
 		Files.walk(org).map(org::relativize).forEach(rethrowConsumer(this::assertEqualFiles));
+	}
+
+	private void assertFilterSuccess() throws IOException {
+		Path org = fs.getPath("/org");
+		Files.walk(org).map(org::relativize).filter(path -> !path.toString().isEmpty())
+				.forEach(rethrowConsumer(path -> {
+					if ("dir1".equals(path.getFileName().toString()) || path.getFileName().toString().matches(".*11$"))
+						assertEqualFiles(path);
+					else
+						assertTrue(Files.notExists(fs.getPath("/dst").resolve(path)));
+				}));
 	}
 
 	private void assertEqualFiles(Path relativePath) throws IOException {
@@ -133,6 +187,5 @@ public class CompleteTest extends TestBase {
 		} else {
 			fail("May not exists? " + org.resolve(relativePath));
 		}
-
 	}
 }

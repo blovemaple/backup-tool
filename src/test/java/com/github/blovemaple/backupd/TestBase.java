@@ -41,14 +41,11 @@ public class TestBase {
 
 	@After
 	public void tearDown() throws Exception {
-		deleteDir(fs.getPath("/org"));
-		deleteDir(fs.getPath("/dst"));
+		clearFs();
 	}
 
-	private void deleteDir(Path path) throws IOException {
-		if (Files.notExists(path))
-			return;
-		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+	private void clearFs() throws IOException {
+		Files.walkFileTree(fs.getPath("/"), new SimpleFileVisitor<Path>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 				super.visitFile(file, attrs);
@@ -58,6 +55,9 @@ public class TestBase {
 
 			@Override
 			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+				if (dir.equals(dir.getRoot()))
+					return FileVisitResult.CONTINUE;
+
 				super.postVisitDirectory(dir, exc);
 				Files.deleteIfExists(dir);
 				return FileVisitResult.CONTINUE;
