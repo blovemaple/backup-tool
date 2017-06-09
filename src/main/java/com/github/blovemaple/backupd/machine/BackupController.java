@@ -38,21 +38,24 @@ public class BackupController implements Runnable {
 			while (true) {
 				BackupTask task = queue.fetch(10);
 				if (task != null) {
-					Future<Void> future = executor.submit(task);
+					Future<Boolean> future = executor.submit(task);
 
 					BackupMonitor monitor = monitors.get(task.conf());
 					if (monitor != null)
 						monitor.taskStarted(task, future);
 
 					try {
-						future.get();
+						Boolean backuped = future.get();
+						if (backuped)
+							logger.info(() -> "Completed backup task " + task);
+						else
+							logger.info(() -> "Dropped backup task " + task);
 					} catch (ExecutionException e) {
 						// 为了保证不中止，只打印而不抛出异常
 						logger.error(() -> "Error running backup task: " + task, e);
 					} catch (CancellationException e) {
 					}
 
-					logger.info(() -> "Completed backup task " + task);
 				}
 			}
 		} catch (InterruptedException e) {

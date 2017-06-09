@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
  * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
-public class BackupTask implements Callable<Void> {
+public class BackupTask implements Callable<Boolean> {
 	private static final Logger logger = LogManager.getLogger(BackupTask.class);
 
 	private final BackupConf conf;
@@ -53,8 +53,15 @@ public class BackupTask implements Callable<Void> {
 			Path fromFullPath = fromFullPath();
 			Path toFullPath = toFullPath();
 
-			if (Files.notExists(fromFullPath))
-				return Files.exists(toFullPath);
+			if (Files.notExists(fromFullPath)) {
+				// 若源文件不存在，则不删除目标文件
+				return false;
+			}
+
+			if (fromFullPath.startsWith(conf.getToPath())) {
+				// 如果源文件在toPath内部，则不进行备份，以免无限循环
+				return false;
+			}
 
 			if (Files.isDirectory(fromFullPath)) {
 				if (!Files.isDirectory(toFullPath))
@@ -97,9 +104,9 @@ public class BackupTask implements Callable<Void> {
 	}
 
 	@Override
-	public Void call() throws IOException {
+	public Boolean call() throws IOException {
 		if (!needBackup())
-			return null;
+			return false;
 
 		if (Files.notExists(conf.getToPath())) {
 			Files.createDirectories(conf.getToPath());
@@ -110,10 +117,6 @@ public class BackupTask implements Callable<Void> {
 		Path fromFullPath = conf.getFromPath().resolve(relativePath);
 		Path toFullPath = conf.getToPath().resolve(relativePath);
 
-		if (Files.notExists(fromFullPath))
-			// 若源文件不存在，则不删除目标文件
-			return null;
-
 		delete(toFullPath);
 		prepareParent(toFullPath);
 		if (Files.isDirectory(fromFullPath))
@@ -121,7 +124,7 @@ public class BackupTask implements Callable<Void> {
 		else if (Files.isRegularFile(fromFullPath))
 			Files.copy(fromFullPath, toFullPath, StandardCopyOption.COPY_ATTRIBUTES);
 
-		return null;
+		return true;
 	}
 
 	private void delete(Path path) throws IOException {

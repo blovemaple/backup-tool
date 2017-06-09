@@ -37,6 +37,7 @@ public class CompleteTest extends TestBase {
 		Files.createDirectories(fs.getPath("/org/dir1/dir11"));
 		Files.createFile(fs.getPath("/org/dir1/dir11/file111"));
 		Files.createFile(fs.getPath("/org/dir1/dir11/file112"));
+		Files.createDirectories(fs.getPath("/org/dir1/dir12"));
 	}
 
 	// @Test
@@ -159,6 +160,37 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	@Test
+	public void testDeletingIgnored() throws Exception {
+		testFullOnce();
+
+		Files.delete(fs.getPath("/org/dir1/dir11/file111"));
+		Files.delete(fs.getPath("/org/dir1/dir11/file112"));
+		Files.delete(fs.getPath("/org/dir1/dir12"));
+
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), ONCE);
+		BackupMonitor monitor = machine.execute(conf);
+		monitor.get();
+
+		assertTrue(Files.exists(fs.getPath("/dst/dir1/dir11/file111")));
+		assertTrue(Files.exists(fs.getPath("/dst/dir1/dir11/file112")));
+		assertTrue(Files.exists(fs.getPath("/dst/dir1/dir12")));
+
+		monitor.cancel(true);
+	}
+
+	@Test
+	public void testAvoidingLoop() throws Exception {
+		Path dst = fs.getPath("/org/dir111");
+
+		BackupConf conf = new BackupConf(fs.getPath("/org"), dst, DAEMON);
+		BackupMonitor monitor = machine.execute(conf);
+		TimeUnit.SECONDS.sleep(8);
+		assertTrue(Files.notExists(fs.getPath("/org/dir111/dir111")));
+
+		monitor.cancel(true);
+	}
+
 	private void assertSuccess() throws IOException {
 		Path org = fs.getPath("/org");
 		Files.walk(org).map(org::relativize).forEach(rethrowConsumer(this::assertEqualFiles));
@@ -176,8 +208,11 @@ public class CompleteTest extends TestBase {
 	}
 
 	private void assertEqualFiles(Path relativePath) throws IOException {
+		assertEqualFiles(relativePath, fs.getPath("/dst"));
+	}
+
+	private void assertEqualFiles(Path relativePath, Path dst) throws IOException {
 		Path org = fs.getPath("/org");
-		Path dst = fs.getPath("/dst");
 		if (Files.isRegularFile(org.resolve(relativePath))) {
 			String orgHash = fileHash(org.resolve(relativePath));
 			String dstHash = fileHash(dst.resolve(relativePath));
