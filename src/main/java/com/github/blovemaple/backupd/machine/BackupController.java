@@ -10,8 +10,8 @@ import java.util.concurrent.Future;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.blovemaple.backupd.plan.BackupConf;
-import com.github.blovemaple.backupd.plan.BackupTask;
+import com.github.blovemaple.backupd.task.BackupConf;
+import com.github.blovemaple.backupd.task.BackupTask;
 
 /**
  * 执行备份的控制任务，负责从{@link BackupDelayingQueue}中提取{@link BackupTask}并执行。

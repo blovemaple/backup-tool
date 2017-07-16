@@ -17,8 +17,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.blovemaple.backupd.plan.BackupConf;
-import com.github.blovemaple.backupd.plan.BackupTask;
+import com.github.blovemaple.backupd.task.BackupConf;
+import com.github.blovemaple.backupd.task.BackupTask;
 
 /**
  * 备份任务等待执行备份的队列。源文件最后修改时间后延迟指定时间后才可执行备份，延迟时间由常量{@link #DELAY_SECONDS}指定。

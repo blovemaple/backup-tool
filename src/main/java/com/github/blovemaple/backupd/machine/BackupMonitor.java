@@ -17,8 +17,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.blovemaple.backupd.plan.BackupConf;
-import com.github.blovemaple.backupd.plan.BackupTask;
+import com.github.blovemaple.backupd.task.BackupConf;
+import com.github.blovemaple.backupd.task.BackupTask;
 
 /**
  * @author blovemaple <blovemaple2010(at)gmail.com>

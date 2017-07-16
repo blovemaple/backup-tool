@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd.plan;
+package com.github.blovemaple.backupd.task;
 
 import static com.github.blovemaple.backupd.utils.FileHashing.*;
 

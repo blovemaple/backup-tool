@@ -1,6 +1,6 @@
 package com.github.blovemaple.backupd;
 
-import static com.github.blovemaple.backupd.plan.BackupConf.BackupConfType.*;
+import static com.github.blovemaple.backupd.task.BackupConf.BackupConfType.*;
 import static com.github.blovemaple.backupd.utils.FileHashing.*;
 import static org.junit.Assert.*;
 import static com.github.blovemaple.backupd.utils.LambdaUtils.*;
@@ -17,7 +17,7 @@ import org.junit.Test;
 
 import com.github.blovemaple.backupd.machine.BackupMachine;
 import com.github.blovemaple.backupd.machine.BackupMonitor;
-import com.github.blovemaple.backupd.plan.BackupConf;
+import com.github.blovemaple.backupd.task.BackupConf;
 
 public class CompleteTest extends TestBase {
 	private static BackupMachine machine;

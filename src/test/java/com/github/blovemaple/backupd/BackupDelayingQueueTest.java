@@ -1,6 +1,6 @@
 package com.github.blovemaple.backupd;
 
-import static com.github.blovemaple.backupd.plan.BackupConf.BackupConfType.*;
+import static com.github.blovemaple.backupd.task.BackupConf.BackupConfType.*;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
@@ -14,8 +14,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
-import com.github.blovemaple.backupd.plan.BackupConf;
-import com.github.blovemaple.backupd.plan.BackupTask;
+import com.github.blovemaple.backupd.task.BackupConf;
+import com.github.blovemaple.backupd.task.BackupTask;
 
 public class BackupDelayingQueueTest extends TestBase {
 	private BackupDelayingQueue queue;

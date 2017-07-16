@@ -1,4 +1,4 @@
-package com.github.blovemaple.backupd.plan;
+package com.github.blovemaple.backupd.task;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
-import com.github.blovemaple.backupd.plan.BackupConf.BackupConfType;
+import com.github.blovemaple.backupd.task.BackupConf.BackupConfType;
 
 /**
  * 检测任务，即执行对一个{@link BackupConf}进行检测并向队列中提交{@link BackupTask}的任务。

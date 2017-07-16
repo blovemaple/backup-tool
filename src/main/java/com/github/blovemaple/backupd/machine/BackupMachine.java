@@ -9,8 +9,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.github.blovemaple.backupd.plan.BackupConf;
-import com.github.blovemaple.backupd.plan.DetectingTask;
+import com.github.blovemaple.backupd.task.BackupConf;
+import com.github.blovemaple.backupd.task.DetectingTask;
 
 /**
  * （非线程安全）
