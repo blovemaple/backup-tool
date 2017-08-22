@@ -46,7 +46,7 @@ public class BackupMonitor implements Future<Void> {
 		this.conf = conf;
 		this.queue = queue;
 
-		// 创建runningMonitor但不启动
+		// 创建runningMonitor但不启动，到检测任务开始时再启动
 		runningMonitor = new Thread(new RunningMonitorTask());
 		runningMonitor.setDaemon(true);
 		runningMonitor.setName("running-monitor");
@@ -56,16 +56,16 @@ public class BackupMonitor implements Future<Void> {
 		return conf;
 	}
 
-	public synchronized void detectingStarted(Future<?> detectingFuture) {
+	protected synchronized void detectingStarted(Future<?> detectingFuture) {
 		this.detectingFuture = detectingFuture;
 		runningMonitor.start();
 	}
 
-	public void taskQueued(BackupTask task) {
+	protected void taskQueued(BackupTask task) {
 		queuedTasks.add(task);
 	}
 
-	public void taskStarted(BackupTask task, Future<?> future) {
+	protected void taskStarted(BackupTask task, Future<?> future) {
 		doneWaitingLock.lock();
 		try {
 			queuedTasks.remove(task);

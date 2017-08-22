@@ -1,7 +1,5 @@
 package com.github.blovemaple.backupd.task;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -26,25 +24,10 @@ public class DetectingTask implements Runnable {
 	@SuppressWarnings("unused")
 	private boolean running = false;
 
-	public DetectingTask(BackupConf conf, BackupDelayingQueue queue) throws IOException {
-		validate(conf);
+	public DetectingTask(BackupConf conf, BackupDelayingQueue queue) {
+		conf.validate();
 		this.conf = conf;
 		this.queue = queue;
-	}
-
-	private void validate(BackupConf conf) throws IOException {
-		if (!Files.isReadable(conf.getFromPath()))
-			// fromPath不存在或不可读，报错
-			throw new IllegalArgumentException("From-path does not exist or is unreadable: " + conf.getFromPath());
-
-		if (Files.isRegularFile(conf.getFromPath()))
-			throw new IllegalArgumentException("Cannot backup from a file.");
-		if (Files.isRegularFile(conf.getToPath()))
-			throw new IllegalArgumentException("Cannot backup into a file.");
-
-		if (conf.getType() == BackupConfType.DAEMON)
-			// 尝试开启watchservice，确保可以用
-			conf.getFromPath().getFileSystem().newWatchService().close();
 	}
 
 	@Override

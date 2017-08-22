@@ -1,7 +1,6 @@
 package com.github.blovemaple.backupd.machine;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,8 +12,6 @@ import com.github.blovemaple.backupd.task.BackupConf;
 import com.github.blovemaple.backupd.task.DetectingTask;
 
 /**
- * （非线程安全）
- * 
  * @author blovemaple <blovemaple2010(at)gmail.com>
  */
 public class BackupMachine implements Closeable {
@@ -34,7 +31,7 @@ public class BackupMachine implements Closeable {
 		executor.submit(backupController);
 	}
 
-	public BackupMonitor execute(BackupConf conf) throws IOException {
+	public synchronized BackupMonitor execute(BackupConf conf) {
 		if (closed)
 			throw new IllegalStateException("Already closed.");
 
@@ -56,7 +53,7 @@ public class BackupMachine implements Closeable {
 	}
 
 	@Override
-	public void close() {
+	public synchronized void close() {
 		if (!closed) {
 			closed = true;
 			executor.shutdownNow();
