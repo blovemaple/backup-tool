@@ -1,7 +1,5 @@
 package com.github.blovemaple.backupd;
 
-import static com.github.blovemaple.backupd.ConfigLine.ConfigLineType.NAME;
-
 import java.awt.AWTException;
 import java.awt.Image;
 import java.awt.SystemTray;
@@ -10,17 +8,13 @@ import java.awt.TrayIcon;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import com.github.blovemaple.backupd.machine.BackupMachine;
 import com.github.blovemaple.backupd.task.BackupConf;
-import com.github.blovemaple.backupd.task.BackupConf.BackupConfType;
 
 /**
  * 主类。
@@ -63,35 +57,7 @@ public class Runner {
 
 	private static void parseConfig() {
 		try {
-			confs = new ArrayList<>();
-			Files.lines(arguments.getConfigFilePath()).filter(StringUtils::isNotBlank).map(ConfigLine::parse)
-					.forEachOrdered(configLine -> {
-						BackupConf conf;
-						if (configLine.getType() == NAME) {
-							confs.add(conf = new BackupConf(BackupConfType.DAEMON));
-						} else {
-							if (!confs.isEmpty()) {
-								conf = confs.get(confs.size() - 1);
-							} else {
-								confs.add(conf = new BackupConf(BackupConfType.DAEMON));
-							}
-						}
-
-						switch (configLine.getType()) {
-						case NAME:
-							conf.setName(configLine.getContent());
-							break;
-						case FROM:
-							conf.setFromPath(configLine.getPath());
-							break;
-						case TO:
-							conf.setToPath(configLine.getPath());
-							break;
-						case FILTER:
-							conf.setFilter(configLine.getContent());
-							break;
-						}
-					});
+			confs = ConfGenerator.fromConfLines(Files.lines(arguments.getConfigFilePath()));
 		} catch (NoSuchFileException e) {
 			showUsageAndExit("No such config file: " + arguments.getConfigFilePath());
 		} catch (IOException e) {

@@ -81,6 +81,7 @@ public class RealTimeDetectingTask implements Runnable {
 				boolean isStillValid = eventKey.reset();
 				if (!isStillValid)
 					pathsByKey.remove(eventKey);
+				// XXX - frompath被删除后就无限等待了，而且重新创建后无法监控
 			}
 
 		} catch (InterruptedException e) {

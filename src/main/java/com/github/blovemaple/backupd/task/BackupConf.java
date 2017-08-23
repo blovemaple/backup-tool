@@ -118,8 +118,8 @@ public class BackupConf {
 
 	@Override
 	public String toString() {
-		return "BackupConf [fromPath=" + fromPath + ", toPath=" + toPath + ", filter=" + filter + ", type=" + type
-				+ "]";
+		return "BackupConf [name=" + name + ", fromPath=" + fromPath + ", toPath=" + toPath + ", filter=" + filter
+				+ ", type=" + type + "]";
 	}
 
 }
