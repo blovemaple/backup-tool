@@ -68,16 +68,16 @@ public class BackupDelayingQueue implements Closeable {
 						if (Thread.interrupted())
 							return;
 
-						logger.trace("Starting to peek.");
+						logger.trace(() -> "Starting to peek.");
 
-						// 取delayingTasks队列头（最近将要ready的task），若队列为空则等待
+						// 取delayingTasks队列头（最近将要ready的task），若队列为空则一直等待直到被submit方法notify
 						BackupTask nextReadyTask;
 						while ((nextReadyTask = delayingTasks.peek()) == null) {
-							logger.trace("Peek empty, waiting.");
+							logger.trace(() -> "Peek empty, waiting.");
 							delayingTasks.wait();
-							logger.trace("Waked up.");
+							logger.trace(() -> "Waked up.");
 						}
-						logger.trace("Peek " + nextReadyTask);
+						logger.trace(() -> "Peek " + delayingTasks.peek());
 
 						// 取readyTime
 						Long readyTime = readyTimes.get(nextReadyTask);
@@ -87,14 +87,15 @@ public class BackupDelayingQueue implements Closeable {
 						// 计算需要延迟的时间
 						long waitTime = readyTime - System.currentTimeMillis();
 						while (waitTime > 0) {
-							logger.trace("Delaying time " + waitTime + ", waiting.");
+							logger.trace(
+									() -> "Delaying time " + (readyTime - System.currentTimeMillis()) + ", waiting.");
 							// 在delayingTasks上等待延迟
 							delayingTasks.wait(waitTime);
 
 							BackupTask nextReadyTaskNow = delayingTasks.peek();
 							if (nextReadyTaskNow != nextReadyTask) {
 								// 等待延迟期间delayingTasks队列头已改变，重新peek
-								logger.trace("Queue head is changed, repeek.");
+								logger.trace(() -> "Queue head is changed, repeek.");
 								continue PEEK_TASK;
 							}
 
@@ -108,7 +109,7 @@ public class BackupDelayingQueue implements Closeable {
 									+ nextReadyTask + ", readyTask=" + readyTask);
 						readyTimes.remove(readyTask);
 						readyTasks.add(readyTask);
-						logger.debug(() -> "Move into delayingTasks: " + readyTask);
+						logger.debug(() -> "Move into readyTasks: " + readyTask);
 					}
 
 				}

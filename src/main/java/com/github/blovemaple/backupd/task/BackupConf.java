@@ -1,6 +1,6 @@
 package com.github.blovemaple.backupd.task;
 
-import java.io.IOException;
+import java.nio.file.ClosedFileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -44,25 +44,33 @@ public class BackupConf {
 	public BackupConf() {
 	}
 
-	public void validate() {
+	public void validate() throws RuntimeException {
+		Objects.requireNonNull(type, "Type is not specified.");
 		Objects.requireNonNull(fromPath, "From-path is not specified.");
 		Objects.requireNonNull(toPath, "To-path is not specified.");
+	}
 
-		if (!Files.isReadable(fromPath))
-			// fromPath不存在或不可读，报错
-			throw new IllegalArgumentException("From-path does not exist or is unreadable: " + fromPath);
+	public void checkReady() throws BackupConfNotReadyException {
+		try {
+			if (!Files.isReadable(fromPath))
+				// fromPath不存在或不可读
+				throw new BackupConfNotReadyException("From-path does not exist or is unreadable: " + fromPath);
+		} catch (ClosedFileSystemException e) {
+			throw new BackupConfNotReadyException("File system is closed.", e);
+		}
 
+		// fromPath和toPath都不能是普通文件
 		if (Files.isRegularFile(fromPath))
-			throw new IllegalArgumentException("Cannot backup from a file.");
+			throw new BackupConfNotReadyException("Cannot backup from a file.");
 		if (Files.isRegularFile(toPath))
-			throw new IllegalArgumentException("Cannot backup into a file.");
+			throw new BackupConfNotReadyException("Cannot backup into a file.");
 
 		try {
 			if (type == BackupConfType.DAEMON)
-				// 尝试开启watchservice，确保可以用
+				// 尝试给fromPath所在的文件系统开启watchservice，确保可以用
 				fromPath.getFileSystem().newWatchService().close();
-		} catch (IOException e) {
-			throw new IllegalArgumentException("From-path is not watchable.", e);
+		} catch (Exception e) {
+			throw new BackupConfNotReadyException("From-path is not watchable.", e);
 		}
 	}
 

@@ -13,6 +13,7 @@ import java.nio.file.WatchService;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +27,8 @@ import com.github.blovemaple.backupd.machine.BackupDelayingQueue;
  */
 public class RealTimeDetectingTask implements Runnable {
 	private static final Logger logger = LogManager.getLogger(RealTimeDetectingTask.class);
+
+	public static Integer EVENT_POLL_SECONDS = 3;
 
 	private final BackupConf conf;
 	private final BackupDelayingQueue queue;
@@ -55,11 +58,28 @@ public class RealTimeDetectingTask implements Runnable {
 
 			// 循环处理事件
 			while (true) {
-				WatchKey eventKey = watcher.take();
+				WatchKey eventKey = null;
+
+				// 在poll事件的同时，每隔一段时间就检查一下conf是否ready，如果不ready则及时退出，交给DetectingTask处理
+				while (eventKey == null) {
+					eventKey = watcher.poll(EVENT_POLL_SECONDS, TimeUnit.SECONDS);
+					try {
+						conf.checkReady();
+					} catch (Exception e) {
+						logger.error(() -> "Backup conf is no longer ready(" + e.getLocalizedMessage() + "): " + conf);
+						return;
+					}
+				}
+
+				WatchKey realEventKey = eventKey;
+
+				// 取出事件并处理
 				try {
-					eventKey.pollEvents().stream().forEach(rethrowConsumer(event -> {
+					realEventKey.pollEvents().forEach(rethrowConsumer(event -> {
+						logger.debug(() -> "New event: " + event);
+
 						Path eventPath = (Path) event.context(); // 注册路径到事件路径的相对路径
-						Path relativePath = pathsByKey.get(eventKey).resolve(eventPath); // fromPath到事件路径的相对路径
+						Path relativePath = pathsByKey.get(realEventKey).resolve(eventPath); // fromPath到事件路径的相对路径
 
 						if (pathMatcher.matches(relativePath))
 							queue.submit(new BackupTask(conf, relativePath));
@@ -76,12 +96,11 @@ public class RealTimeDetectingTask implements Runnable {
 					}));
 				} catch (Exception e) {
 					// 为了保证任务不中止，只打印而不抛出异常
-					logger.error(() -> "Error handling event of path: " + pathsByKey.get(eventKey), e);
+					logger.error(() -> "Error handling event of path: " + pathsByKey.get(realEventKey), e);
 				}
-				boolean isStillValid = eventKey.reset();
+				boolean isStillValid = realEventKey.reset();
 				if (!isStillValid)
-					pathsByKey.remove(eventKey);
-				// XXX - frompath被删除后就无限等待了，而且重新创建后无法监控
+					pathsByKey.remove(realEventKey);
 			}
 
 		} catch (InterruptedException e) {
@@ -92,9 +111,9 @@ public class RealTimeDetectingTask implements Runnable {
 			logger.error(() -> "IO error in real-time detecting task of conf " + conf, e);
 		} catch (Exception e) {
 			logger.error(() -> "Unknown error in real-time detecting task of conf " + conf, e);
+		} finally {
+			logger.info(() -> "Ended real time detecting for " + conf);
 		}
-
-		logger.info(() -> "Ended real time detecting for " + conf);
 	}
 
 	private void fullDetect(Path fullPath) throws IOException, RuntimeException, Exception {

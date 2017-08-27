@@ -92,15 +92,12 @@ public class BackupTask implements Callable<Boolean> {
 		FileTime time1 = Files.getLastModifiedTime(file1);
 		FileTime time2 = Files.getLastModifiedTime(file2);
 		if (time1.equals(time2))
-			// 为了节约性能，只要文件大小和修改时间都一样，就认为一样，不再比较内容hash
+			// 为了快，只要文件大小和修改时间都一样，就认为文件一样，不再比较内容hash
 			return true;
 
 		String hash1 = fileHash(file1);
 		String hash2 = fileHash(file2);
-		if (!hash1.equals(hash2))
-			return false;
-
-		return true;
+		return hash1.equals(hash2);
 	}
 
 	@Override

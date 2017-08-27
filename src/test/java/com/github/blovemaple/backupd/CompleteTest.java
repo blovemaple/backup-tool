@@ -2,8 +2,8 @@ package com.github.blovemaple.backupd;
 
 import static com.github.blovemaple.backupd.task.BackupConf.BackupConfType.*;
 import static com.github.blovemaple.backupd.utils.FileHashing.*;
-import static org.junit.Assert.*;
 import static com.github.blovemaple.backupd.utils.LambdaUtils.*;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,6 +22,9 @@ import com.github.blovemaple.backupd.machine.BackupMonitor;
 import com.github.blovemaple.backupd.task.BackupConf;
 
 public class CompleteTest extends TestBase {
+	@SuppressWarnings("unused")
+	private static final Logger logger = LogManager.getLogger(CompleteTest.class);
+	
 	private static BackupMachine machine;
 
 	@BeforeClass
@@ -40,7 +45,10 @@ public class CompleteTest extends TestBase {
 		Files.createDirectories(fs.getPath("/org/dir1/dir12"));
 	}
 
-	// @Test
+	/**
+	 * ONCE全量备份。
+	 */
+	// @Test // 已被其他case调用，所以不单独跑
 	public void testFullOnce() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), ONCE);
 		BackupMonitor monitor = machine.execute(conf);
@@ -50,6 +58,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * ONCE全量备份后，执行ONCE增量备份。
+	 */
 	@Test
 	public void testIncrOnce() throws Exception {
 		testFullOnce();
@@ -73,6 +84,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * ONCE带filter的全量备份。
+	 */
 	@Test
 	public void testFilterOnce() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), "**/*11", ONCE);
@@ -83,6 +97,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * DAEMON全量备份。
+	 */
 	@Test
 	public void testFullRealtime() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
@@ -93,6 +110,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * DAEMON全量备份后，继续执行增量备份。
+	 */
 	@Test
 	public void testIncrRealtime() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
@@ -117,6 +137,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * DAEMON全量备份后，快速（间隔1s）修改一个文件多次，测试增量备份。
+	 */
 	@Test
 	public void testFastModRealtime() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
@@ -135,6 +158,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * DAEMON带filter的全量备份后，继续执行增量备份。
+	 */
 	@Test
 	public void testFilterRealtime() throws Exception {
 		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), "**/*11", DAEMON);
@@ -160,6 +186,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * ONCE全量备份后，删除部分源文件，执行ONCE增量备份时确认不删除目标文件。
+	 */
 	@Test
 	public void testDeletingIgnored() throws Exception {
 		testFullOnce();
@@ -179,6 +208,9 @@ public class CompleteTest extends TestBase {
 		monitor.cancel(true);
 	}
 
+	/**
+	 * 把目标目录设为源目录的子目录，确认不执行备份以避免无限循环。
+	 */
 	@Test
 	public void testAvoidingLoop() throws Exception {
 		Path dst = fs.getPath("/org/dir111");
@@ -187,6 +219,34 @@ public class CompleteTest extends TestBase {
 		BackupMonitor monitor = machine.execute(conf);
 		TimeUnit.SECONDS.sleep(8);
 		assertTrue(Files.notExists(fs.getPath("/org/dir111/dir111")));
+
+		monitor.cancel(true);
+	}
+
+	/**
+	 * frompath不存在或被删除时等待，创建之后能正常备份。
+	 */
+	@Test
+	public void testDeletingFromPath() throws Exception {
+		clearFs();
+
+		BackupConf conf = new BackupConf(fs.getPath("/org"), fs.getPath("/dst"), DAEMON);
+		BackupMonitor monitor = machine.execute(conf);
+
+		TimeUnit.SECONDS.sleep(1);
+
+		setUp();
+		setUp1();
+		TimeUnit.SECONDS.sleep(4);
+		assertSuccess();
+
+		clearFs();
+		TimeUnit.SECONDS.sleep(5);
+
+		setUp();
+		setUp1();
+		TimeUnit.SECONDS.sleep(4);
+		assertSuccess();
 
 		monitor.cancel(true);
 	}
