@@ -10,10 +10,12 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import com.github.blovemaple.backupd.machine.BackupMachine;
+import com.github.blovemaple.backupd.machine.BackupMonitor;
 import com.github.blovemaple.backupd.task.BackupConf;
 
 /**
@@ -32,6 +34,7 @@ public class Runner {
 	private static List<BackupConf> confs;
 
 	private static BackupMachine machine;
+	private static List<BackupMonitor> monitors;
 
 	public static void main(String[] args) throws InterruptedException {
 		parseArgs(args);
@@ -75,8 +78,17 @@ public class Runner {
 			}
 		});
 
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				if (monitors != null) {
+					monitors.forEach(m -> m.cancel(true));
+				}
+			}
+		});
+
 		machine = new BackupMachine();
-		confs.forEach(machine::execute);
+		monitors = confs.stream().map(machine::execute).collect(Collectors.toList());
 	}
 
 	private static void showUsageAndExit(String... errorMessage) {
