@@ -1,0 +1,21 @@
+##################################################
+# 
+# This is the configuration file of backupd.
+# 
+##################################################
+
+## A config file contains one to more backup configs, which definite backup tasks.
+## An example:
+
+## A line started with "backup" is the first line of a backup config, which indicates the name of this task.
+## Name can also be empty, but "backup" is required.
+# backup important files
+
+## A line started with "from" indicates the source folder.
+# from /tmp/from/dir
+
+## A line started with "to" indicated the target forder.
+# to /tmp/to/dir
+
+## A line started with "only" is optional, which indicates dirs or files to backup, in glob.
+# only some/dir/*.txt
